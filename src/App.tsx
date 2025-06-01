@@ -108,7 +108,7 @@ export const App = () => {
             value={selectedUser ? selectedUser.id : ''}
             onChange={todoUser => onUserChange(todoUser.target.value)}
           >
-            <option value="" selected disabled>
+            <option value="" disabled>
               Choose a user
             </option>
             {usersFromServer.map((user: User) => (
