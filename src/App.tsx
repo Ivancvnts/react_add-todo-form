@@ -25,26 +25,10 @@ export const todosWithUsers: Todo[] = todosFromServer.map((todo: Todo) => {
 export const App = () => {
   const [isValid, setIsValid] = useState({ title: true, user: true });
   const [todos, setTodos] = useState<Todo[]>(todosWithUsers);
-  const [newTodo, setNewTodo] = useState<Todo>({
-    id: todos[todos.length - 1]?.id + 1,
-    title: '',
-    completed: false,
-    userId: 0,
-    user: undefined,
-  });
+  const [title, setTitle] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User>();
 
-  const handleChange = (field: string, value: string) => {
-    setIsValid(prevState => ({
-      ...prevState,
-      [field]: true, // Reset validation for the field being changed
-    }));
-    setNewTodo(prevTodo => ({
-      ...prevTodo,
-      [field]: value,
-    }));
-  };
-
-  const addNewUser = (userId: string) => {
+  const onUserChange = (userId: string) => {
     const newUser = getUserById(Number(userId));
 
     if (!newUser) {
@@ -55,11 +39,21 @@ export const App = () => {
       ...prevState,
       user: true, // Reset validation for the field being changed
     }));
-    setNewTodo(prevTodo => ({
-      ...prevTodo,
-      userId: newUser.id,
-      user: newUser,
+
+    setSelectedUser(newUser);
+  };
+
+  const onTitleChange = (newTitle: string) => {
+    if (!newTitle.trim()) {
+      return;
+    }
+
+    setIsValid(prevState => ({
+      ...prevState,
+      title: true, // Reset validation for the field being changed
     }));
+
+    setTitle(newTitle);
   };
 
   const addTodo = (todoToAdd: Todo) => {
@@ -68,16 +62,26 @@ export const App = () => {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!newTodo.title || !newTodo.user) {
+
+    if (!title || !selectedUser) {
       setIsValid({
-        title: !!newTodo.title,
-        user: !!newTodo.user,
+        title: !!title,
+        user: !!selectedUser,
       });
 
       return;
     }
 
-    addTodo(newTodo);
+    addTodo({
+      id: todos.reduce((maxId, todo) => Math.max(maxId, todo.id), 0) + 1,
+      title: title.trim(),
+      completed: false,
+      userId: selectedUser.id,
+      user: selectedUser,
+    });
+
+    setTitle('');
+    setSelectedUser(undefined);
   }
 
   return (
@@ -89,9 +93,9 @@ export const App = () => {
           <input
             type="text"
             data-cy="titleInput"
-            onChange={titleEvent =>
-              handleChange('title', titleEvent.target.value)
-            }
+            placeholder={title ? '' : 'Enter todo title'}
+            value={title}
+            onChange={titleEvent => onTitleChange(titleEvent.target.value)}
           />
           {!isValid.title && (
             <span className="error">Please enter a title</span>
@@ -101,7 +105,8 @@ export const App = () => {
         <div className="field">
           <select
             data-cy="userSelect"
-            onChange={userEvent => addNewUser(userEvent.target.value)}
+            value={selectedUser ? selectedUser.id : ''}
+            onChange={todoUser => onUserChange(todoUser.target.value)}
           >
             <option value="" selected disabled>
               Choose a user
